@@ -1,0 +1,18 @@
+{
+  "name": "dexie-cross",
+  "version": "0.0.1",
+  "main": "dist/umd/index.js",
+  "module": "dist/esm/index.js",
+  "typings": "dist/esm/index.d.ts",
+  "scripts": {
+    "build": "run-s build:esm build:umd",
+    "build:esm": "tsc",
+    "build:umd": "rollup dist/esm/index.js --format umd --name DexieCross --file dist/umd/index.js"
+  },
+  "devDependencies": {
+    "dexie": "3.2.2",
+    "npm-run-all": "4.1.5",
+    "rollup": "2.75.6",
+    "typescript": "4.7.3"
+  }
+}
