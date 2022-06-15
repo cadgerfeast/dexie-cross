@@ -7,7 +7,7 @@
   "scripts": {
     "build": "run-s build:esm build:umd",
     "build:esm": "tsc",
-    "build:umd": "rollup dist/esm/index.js --format umd --name DexieCross --file dist/umd/index.js"
+    "build:umd": "rollup dist/esm/index.js --format umd --name DexieCross --context window --file dist/umd/index.js"
   },
   "devDependencies": {
     "dexie": "3.2.2",
