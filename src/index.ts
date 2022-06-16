@@ -11,10 +11,6 @@ interface ClientConfigurationOptions {
 
 let frameContainer: HTMLElement;
 
-function override <T extends Function> (originalFunction: T, factory: (orig: Function) => T): T {
-  return factory(originalFunction);
-}
-
 class DexieCross {
   // Attributes
   private _db: Dexie;
@@ -52,31 +48,38 @@ class DexieCross {
       this._awaiters = [];
     }
   }
-  private async _hostRequest <T> (iframe: HTMLIFrameElement, name: string, method: string): Promise<T> {
-    await this._isReady();
-    return new Promise((resolve) => {
-      const id = Date.now().toString();
-      this._callbacks[id] = (params: T) => {
-        resolve(params);
-      }
-      iframe.contentWindow?.postMessage(JSON.stringify({
-        type: 'dexie',
-        event: 'request',
-        id,
-        name,
-        method
-      }), '*');
+  private _hostRequest <T> (iframe: HTMLIFrameElement, name: string, method: string) {
+    return new Dexie.Promise<T>((resolve) => {
+      this._isReady().then(() => {
+        const id = Date.now().toString();
+        this._callbacks[id] = (res: T) => {
+          resolve(res);
+        }
+        iframe.contentWindow?.postMessage(JSON.stringify({
+          type: 'dexie',
+          event: 'request',
+          id,
+          name,
+          method
+        }), '*');
+      });
     });
+  }
+  private async _handleClientRequest (id: string, name: string, method: string) {
+    const elements = await ((this._db as any)[name] as any)[method]();
+    window.parent.postMessage(JSON.stringify({
+      type: 'dexie',
+      event: 'response',
+      id,
+      data: elements
+    }), '*');
   }
   private _overrideTablePrototype (iframe: HTMLIFrameElement) {
     const cross = this;
     // toArray()
-    this._db.Table.prototype.toArray = override(this._db.Table.prototype.toArray, function (orig) {
+    this._db.Table.prototype.toArray = Dexie.override(this._db.Table.prototype.toArray, function () {
       return function (this: Dexie.Table) {
-        var returnValue = orig.apply(this, arguments);
-        // TODO do not use original but send params to frame
-        cross._hostRequest(iframe, this.name, 'toArray');
-        return returnValue;
+        return cross._hostRequest(iframe, this.name, 'toArray');
       };
     });
   }
@@ -89,9 +92,7 @@ class DexieCross {
             if (data.event === 'handshake') {
               this._setState(DexieState.CONNECTED);
             } else if (data.event === 'request') {
-              console.info('SNETCH: request');
-              console.info(data);
-              // TODO do request and send response
+              this._handleClientRequest(data.id, data.name, data.method);
             }
           }
         } catch {}
@@ -122,8 +123,9 @@ class DexieCross {
                 type: 'dexie',
                 event: 'handshake'
               }), '*');
+            } else if (data.event === 'response') {
+              this._callbacks[data.id](data.data);
             }
-            // TODO do call registered callback when receiving response
           }
         } catch {}
       }
