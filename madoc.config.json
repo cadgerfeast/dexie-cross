@@ -1,0 +1,7 @@
+{
+  "description": "Dexie Cross Domain Addon",
+  "docsDir": "./docs",
+  "addonsDir": "./addons",
+  "publicDir": "./public",
+  "distDir": "./.docs"
+}
