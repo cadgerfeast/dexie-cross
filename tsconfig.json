@@ -1,15 +1,23 @@
 {
   "compilerOptions": {
-    "target": "ES5",
-    "module": "ES2020",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "skipLibCheck": true,
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
     "moduleResolution": "Node",
-    "outDir": "./dist/esm"
+    "strict": true,
+    "jsx": "preserve",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "lib": ["ESNext", "DOM"],
+    "skipLibCheck": true,
+    "types": ["vite/client", "jest"],
+    "noEmit": true
   },
   "include": [
-    "./src"
+    "./addons",
+    "./src",
+    "./test",
+    "./types.d.ts"
   ]
 }

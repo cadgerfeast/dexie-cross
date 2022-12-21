@@ -1,6 +1,6 @@
 <template>
   <div class="client">
-    Client
+    <span class="title">Todos</span>
   </div>
 </template>
 
@@ -11,7 +11,7 @@
   import { Todo } from './index';
   // Constants
   class TodoDatabase extends DexieCrossClient {
-    public todos: DexieCrossClientTable<Todo>;
+    public todos!: DexieCrossClientTable<Todo>;
     constructor () {
       super('TodoDatabase', {
         hostUrl: `${window.location.origin}/usage/host`
@@ -25,19 +25,18 @@
     name: 'Client',
     data () {
       return {
-        todos: []
+        todos: [] as Todo[]
       };
     },
     methods: {
       async getTodos () {
-        this.todos = await db.todos.toArray();
-        console.info(this.todos);
+        this.todos = await db.todos.query((todos) => todos.toArray());
       },
       async addTodo (title: string) {
-        // await db.todos.add({
-        //   title,
-        //   completed: false
-        // });
+        await db.todos.query((todos) => todos.add({
+          title,
+          completed: false
+        }));
       }
     },
     mounted () {
@@ -48,5 +47,12 @@
 
 <style lang="scss" scoped>
   div.client {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    > span.title {
+      font-weight: bold;
+      font-size: 40px;
+    }
   }
 </style>

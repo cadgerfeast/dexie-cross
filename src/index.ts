@@ -1,7 +1,8 @@
 // Helpers
-import Dexie from 'dexie';
+import Dexie, { PromiseExtended } from 'dexie';
+import { SafeAny } from './utils/types';
 // Types
-type DexieEventData<T = unknown> = {
+type DexieEventData<T = SafeAny> = {
   type: 'dexie-cross';
   event: 'host-handshake';
 } | {
@@ -10,9 +11,9 @@ type DexieEventData<T = unknown> = {
 } | {
   id: string;
   type: 'dexie-cross';
-  event: 'request';
+  event: 'query';
   table: string;
-  method: string;
+  query: string;
 } | {
   id: string;
   type: 'dexie-cross';
@@ -21,6 +22,12 @@ type DexieEventData<T = unknown> = {
   data: T;
 };
 type ConnectionState = 'disconnected'|'connected';
+
+function postDexieMessage (target: Window|null, message: DexieEventData) {
+  if (target) {
+    target.postMessage(JSON.stringify(message), '*');
+  }
+}
 
 export function DexieCrossHost (db: Dexie) {
   async function _handleMessage (target: MessageEventSource, e: DexieEventData) {
@@ -32,14 +39,15 @@ export function DexieCrossHost (db: Dexie) {
         }));
         break;
       }
-      case 'request': {
-        const data = await db[e.table][e.method]();
+      case 'query': {
+        const query = new Function('...args', `const [db] = args; return (${decodeURI(e.query)})(db['${e.table}']);`);
+        const res = await query(db);
         target.postMessage(JSON.stringify({
           id: e.id,
           type: 'dexie-cross',
           event: 'response',
           table: e.table,
-          data
+          data: res
         }));
         break;
       }
@@ -59,22 +67,20 @@ export class DexieCrossClient {
   // Attributes
   public name: string;
   public hostUrl: string;
-  public state: ConnectionState;
-  public iframe: HTMLIFrameElement;
-  private _tables: Record<string, DexieCrossClientTable>;
+  private _state: ConnectionState;
+  private _iframe: HTMLIFrameElement;
   private _awaiters: (() => void)[];
   // Constructor
   constructor (name: string, manifest: ClientManifest) {
     this.name = name;
     this.hostUrl = manifest.hostUrl;
-    this.state = 'disconnected';
-    this.iframe = this._initializeIframe();
-    this._tables = {};
+    this._state = 'disconnected';
+    this._iframe = this._initializeIframe();
     this._awaiters = [];
   }
   // Methods
   public isReady (): Promise<void> {
-    if (this.state === 'connected') {
+    if (this._state === 'connected') {
       return Promise.resolve();
     } else {
       return new Promise((resolve) => {
@@ -82,8 +88,11 @@ export class DexieCrossClient {
       });
     }
   }
+  public postMessage (message: DexieEventData) {
+    postDexieMessage(this._iframe.contentWindow, message);
+  }
   private _setState (state: ConnectionState) {
-    this.state = state;
+    this._state = state;
     if (state === 'connected') {
       for (const _awaiter of this._awaiters) {
         _awaiter();
@@ -105,10 +114,10 @@ export class DexieCrossClient {
       }
     });
     iframe.addEventListener('load', () => {
-      iframe.contentWindow?.postMessage(JSON.stringify({
+      postDexieMessage(iframe.contentWindow, {
         type: 'dexie-cross',
         event: 'client-handshake'
-      }), '*');
+      });
     });
     frameContainer.appendChild(iframe);
     document.body.appendChild(frameContainer);
@@ -120,49 +129,52 @@ export class DexieCrossClient {
         this._setState('connected');
         break;
       }
-      case 'response': {
-        this._tables[e.table].response(e.id, e.data);
-        break;
-      }
     }
   }
-  public addTable<T = unknown> (key: string) {
-    const table = new DexieCrossClientTable<T>(this, key);
-    this._tables[key] = table;
-    Object.defineProperty(this, key, { value: table });
+  public addTable <T = SafeAny> (key: string) {
+    Object.defineProperty(this, key, { value: new DexieCrossClientTable<T>(this, key) });
   }
 }
-export class DexieCrossClientTable<T = unknown> {
+type Awaiters<K = SafeAny> = Record<string, (res: K) => void>;
+export class DexieCrossClientTable<T = SafeAny> {
   private _db: DexieCrossClient;
   private _key: string;
-  private _awaiters: Record<string, Function>;
+  private _awaiters: Awaiters;
   // Constructor
   constructor (db: DexieCrossClient, key: string) {
     this._db = db;
     this._key = key;
     this._awaiters = {};
-  }
-  // Methods
-  public response <T> (id: string, res: T) {
-    this._awaiters[id](res);
-  }
-  private async _request<T = unknown> (method: string) {
-    return new Promise<T>((resolve) => {
-      const id = Date.now().toString();
-      this._awaiters[id] = (res: T) => { resolve(res); };
-      this._db.iframe.contentWindow?.postMessage(JSON.stringify({
-        id,
-        type: 'dexie-cross',
-        event: 'request',
-        table: this._key,
-        method
-      }), '*');
+    window.addEventListener('message', (e) => {
+      const data: DexieEventData<T> = JSON.parse(e.data);
+      if (data.type === 'dexie-cross') {
+        this._handleMessage(data);
+      }
     });
   }
-  public async toArray (): Promise<Array<T>> {
-    await this._db.isReady();
-    return this._request('toArray');
+  // Methods
+  private _handleMessage (e: DexieEventData<T>) {
+    switch (e.event) {
+      case 'response': {
+        if (this._awaiters[e.id]) {
+          this._awaiters[e.id](e.data);
+        }
+        break;
+      }
+    }
   }
-  // public async add(item: T, key?: TKey): Promise<TKey> {
-  // }
+  public async query <K> (body: (db: Dexie.Table<T>) => PromiseExtended<K>): Promise<K> {
+    await this._db.isReady();
+    return new Promise<K>((resolve) => {
+      const id = Date.now().toString();
+      this._awaiters[id] = (res: K) => { resolve(res); };
+      this._db.postMessage({
+        id,
+        type: 'dexie-cross',
+        event: 'query',
+        table: this._key,
+        query: encodeURI(body.toString())
+      });
+    });
+  }
 }
