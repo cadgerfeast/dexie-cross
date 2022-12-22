@@ -13,6 +13,7 @@ type DexieEventData<T = SafeAny> = {
   type: 'dexie-cross';
   event: 'query';
   table: string;
+  args: Record<string, SafeAny>;
   query: string;
 } | {
   id: string;
@@ -40,8 +41,10 @@ export function DexieCrossHost (db: Dexie) {
         break;
       }
       case 'query': {
-        const query = new Function('...args', `const [db] = args; return (${decodeURI(e.query)})(db['${e.table}']);`);
-        const res = await query(db);
+        const argKeys = Object.keys(e.args);
+        const argValues = Object.values(e.args);
+        const query = new Function('...args', `const [db, ${argKeys.join(', ')}] = args; return (${decodeURI(e.query)})(db['${e.table}']);`);
+        const res = await query(db, ...argValues);
         target.postMessage(JSON.stringify({
           id: e.id,
           type: 'dexie-cross',
@@ -136,6 +139,10 @@ export class DexieCrossClient {
   }
 }
 type Awaiters<K = SafeAny> = Record<string, (res: K) => void>;
+interface QueryArgs<T, K> {
+  args?: Record<string, SafeAny>;
+  body: (db: Dexie.Table<T>) => PromiseExtended<K>
+}
 export class DexieCrossClientTable<T = SafeAny> {
   private _db: DexieCrossClient;
   private _key: string;
@@ -163,7 +170,7 @@ export class DexieCrossClientTable<T = SafeAny> {
       }
     }
   }
-  public async query <K> (body: (db: Dexie.Table<T>) => PromiseExtended<K>): Promise<K> {
+  public async query <K> (options: QueryArgs<T, K>): Promise<K> {
     await this._db.isReady();
     return new Promise<K>((resolve) => {
       const id = Date.now().toString();
@@ -173,7 +180,8 @@ export class DexieCrossClientTable<T = SafeAny> {
         type: 'dexie-cross',
         event: 'query',
         table: this._key,
-        query: encodeURI(body.toString())
+        args: options.args || {},
+        query: encodeURI(options.body.toString())
       });
     });
   }

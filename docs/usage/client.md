@@ -35,11 +35,20 @@ class TodoDatabase extends DexieCrossClient {
 const db = new TodoDatabase();
 
 // Then, in order to make queries:
-const todos = await db.todos.query((todos) => todos.toArray());
-await db.todos.query((todos) => todos.add({
-  title: 'new todo',
-  completed: false
-}));
+const todos = await db.todos.query({
+  body: (todos) => todos.toArray()
+});
+// If you need args to be passed to a query, you need to add them to the args section
+const todo = {
+  title: 'Use Dexie',
+  completed: true
+};
+await db.todos.query({
+  args: {
+    todo
+  },
+  body: (todos) => todos.add(todo)
+});
 ```
 
 ## Playground

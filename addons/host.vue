@@ -13,20 +13,16 @@
           <th>ID</th>
           <th>Title</th>
           <th>Completed</th>
-          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="todo in todos" :key="todo.id">
           <td>{{ todo.id }}</td>
-          <td contenteditable @input="onChangeTitle($event, todo)">{{ todo.title }}</td>
-          <td>
-            <input type="checkbox" v-model="todo.completed" @change="onChangeCompleted($event, todo)"/>
+          <td class="editable">
+            <input class="title" v-model="todo.title" @change="onChangeTitle(todo)"/>
           </td>
           <td>
-            <button @click="removeTodo(todo)">
-              <Icon :src="'/icons/delete.svg'" size="18px" class="icon"/>
-            </button>
+            <input type="checkbox" v-model="todo.completed" @change="onChangeCompleted($event, todo)"/>
           </td>
         </tr>
       </tbody>
@@ -67,13 +63,15 @@
           completed: false
         });
       },
-      async removeTodo (todo: Todo) {
-        await db.todos.delete(todo.id as number);
-      },
-      async onChangeTitle (e: Event, todo: Todo) {
-        await db.todos.update(todo, {
-          title: (e.target as HTMLTableCellElement).textContent
-        });
+      async onChangeTitle (todo: Todo) {
+        const newTitle = todo.title.trim();
+        if (newTitle) {
+          await db.todos.update(todo, {
+            title: newTitle
+          });
+        } else {
+          await db.todos.delete(todo.id as number);
+        }
       },
       async onChangeCompleted (e: Event, todo: Todo) {
         await db.todos.update(todo, {
@@ -103,6 +101,20 @@
     }
     > table {
       width: 100%;
+      > tbody {
+        > tr {
+          > td.editable {
+            padding: 0;
+            > input {
+              box-sizing: border-box;
+              padding: 6px 13px;
+              border: none;
+              width: 100%;
+              background: none;
+            }
+          }
+        }
+      }
     }
   }
 </style>
