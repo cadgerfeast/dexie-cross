@@ -1,5 +1,5 @@
 // Helpers
-import Dexie, { PromiseExtended } from 'dexie';
+import Dexie from 'dexie';
 import { SafeAny } from './utils/types';
 // Types
 type DexieEventData<T = SafeAny> = {
@@ -33,7 +33,7 @@ export function DexieCrossHost (db: Dexie) {
       case 'query': {
         const argKeys = Object.keys(e.args);
         const argValues = Object.values(e.args);
-        const query = new Function('...args', `const [db, ${argKeys.join(', ')}] = args; return (${decodeURI(e.query)})(db['${e.table}']);`);
+        const query = new Function('...args', `const [db, ${argKeys.join(', ')}] = args; return ((table) => ${decodeURI(e.query)})(db['${e.table}']);`);
         const res = await query(db, ...argValues);
         postDexieMessage(target as Window, {
           id: e.id,
@@ -129,9 +129,9 @@ export class DexieCrossClient {
   }
 }
 type Awaiters<K = SafeAny> = Record<string, (res: K) => void>;
-interface QueryArgs<T, K> {
+interface QueryArgs {
   args?: Record<string, SafeAny>;
-  body: (db: Dexie.Table<T>) => PromiseExtended<K>
+  body: string;
 }
 export class DexieCrossClientTable<T = SafeAny> {
   private _db: DexieCrossClient;
@@ -160,7 +160,7 @@ export class DexieCrossClientTable<T = SafeAny> {
       }
     }
   }
-  private async _query <K> (options: QueryArgs<T, K>): Promise<K> {
+  private async _query <K> (options: QueryArgs): Promise<K> {
     await this._db.isReady();
     return new Promise<K>((resolve) => {
       const id = Date.now().toString();
@@ -171,14 +171,14 @@ export class DexieCrossClientTable<T = SafeAny> {
         event: 'query',
         table: this._key,
         args: options.args || {},
-        query: encodeURI(options.body.toString())
+        query: encodeURI(options.body)
       });
     });
   }
   // To Array
   public async toArray (): Promise<T[]> {
     return this._query({
-      body: (table) => table.toArray()
+      body: 'table.toArray()'
     });
   }
   // Add
@@ -187,7 +187,7 @@ export class DexieCrossClientTable<T = SafeAny> {
       args: {
         el
       },
-      body: (table) => table.add(el)
+      body: 'table.add(el)'
     });
   }
   // Update
@@ -202,7 +202,7 @@ export class DexieCrossClientTable<T = SafeAny> {
           el,
           changes
         },
-        body: (table) => table.update(el, changes)
+        body: 'table.update(el, changes)'
       });
     } else {
       const changes = args[0];
@@ -210,7 +210,7 @@ export class DexieCrossClientTable<T = SafeAny> {
         args: {
           changes
         },
-        body: (todos) => todos.toCollection().modify(changes)
+        body: 'todos.toCollection().modify(changes)'
       });
     }
   }
@@ -220,7 +220,7 @@ export class DexieCrossClientTable<T = SafeAny> {
       args: {
         key
       },
-      body: (table) => table.delete(key)
+      body: 'table.delete(key)'
     });
   }
 }
