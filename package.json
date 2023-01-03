@@ -1,7 +1,7 @@
 {
   "name": "dexie-cross",
   "type": "module",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Dexie Cross Domain Addon",
   "keywords": [
     "dexie-cross",

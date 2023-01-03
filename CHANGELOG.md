@@ -1,5 +1,5 @@
 # Changelog
 
-## 0.0.4
+## 0.0.5
 
-- add umd export [`dea66a6`](https://github.com/cadgerfeast/dexie-cross/commit/dea66a6c597efa9b8ebed44938892da369a9bf68)
+- major fix for github pages [`f0740e1`](https://github.com/cadgerfeast/dexie-cross/commit/f0740e1b6575648c2d1b949351e5093c12dd2aa6)
