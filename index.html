@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="description" content="Dexie Cross Domain Addon"> 
+    <title>Dexie Cross</title>
+    <link rel="icon" href="/icons/dexie-cross.svg"/>
+    <script type="module" crossorigin src="/assets/index-dd162630.js"></script>
+    <link rel="stylesheet" href="/assets/index-9ae5c8a3.css">
+  </head>
+  <body>
+    <script>
+      (function(){
+        var redirect = sessionStorage.redirect;
+        delete sessionStorage.redirect;
+        if (redirect && redirect != location.href) {
+          history.replaceState(null, null, redirect);
+        }
+      })();
+    </script>
+    <div id="app"></div>
+    
+  </body>
+</html>
