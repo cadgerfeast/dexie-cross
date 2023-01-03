@@ -210,7 +210,7 @@ export class DexieCrossClientTable<T = SafeAny> {
         args: {
           changes
         },
-        body: 'todos.toCollection().modify(changes)'
+        body: 'table.toCollection().modify(changes)'
       });
     }
   }
