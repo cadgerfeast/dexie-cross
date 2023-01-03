@@ -3,7 +3,7 @@
     <span class="title">Todos</span>
     <div class="todos">
       <header>
-        <input class="check" type="checkbox" v-model="allChecked" @change="onBulkChange"/>
+        <input class="check" type="checkbox" v-model="bulkChecked" :indeterminate="bulkState === 'partial'" @change="onBulkChange"/>
         <input class="new-todo-title" v-model="title" placeholder="What needs to be done?" @keyup.enter="addTodo"/>
       </header>
       <ul>
@@ -27,6 +27,8 @@
   import { defineComponent } from 'vue';
   import { DexieCrossClient, DexieCrossClientTable } from '../src';
   import { Todo } from './index';
+  // Types
+  type BulkState = 'empty'|'partial'|'full';
   // Constants
   class TodoDatabase extends DexieCrossClient {
     public todos!: DexieCrossClientTable<Todo>;
@@ -44,7 +46,8 @@
     data () {
       return {
         todos: [] as Todo[],
-        allChecked: false,
+        bulkChecked: false,
+        bulkState: 'empty' as BulkState,
         title: ''
       };
     },
@@ -54,45 +57,45 @@
       }
     },
     methods: {
+      updateBulkState () {
+        const checkedLength = this.todos.filter((t) => t.completed).length;
+        if (checkedLength === 0) {
+          this.bulkState = 'empty';
+          this.bulkChecked = false;
+        } else if (checkedLength === this.todos.length) {
+          this.bulkState = 'full';
+          this.bulkChecked = true;
+        } else {
+          this.bulkState = 'partial';
+          this.bulkChecked = false;
+        }
+      },
       async getTodos () {
-        this.todos = await db.todos.query({
-          body: (todos) => todos.toArray()
-        });
+        this.todos = await db.todos.toArray();
+        this.updateBulkState();
       },
       async addTodo () {
-        const todo = {
+        await db.todos.add({
           title: this.title,
           completed: false
-        };
-        await db.todos.query({
-          args: {
-            todo
-          },
-          body: (todos) => todos.add(todo)
         });
         this.title = '';
         await this.getTodos();
+        this.updateBulkState();
       },
       async updateTodo (todo: Todo) {
         const title = todo.title;
         const completed = todo.completed;
-        await db.todos.query({
-          args: {
-            todo,
-            title,
-            completed
-          },
-          body: (todos) => todos.update(todo, { title, completed })
+        await db.todos.update(todo, {
+          title,
+          completed
         });
+        this.updateBulkState();
       },
       async removeTodo (todo: Todo) {
-        await db.todos.query({
-          args: {
-            todo
-          },
-          body: (todos) => todos.delete(todo.id)
-        });
+        await db.todos.delete(todo.id as number);
         await this.getTodos();
+        this.updateBulkState();
       },
       async onTodoChange (todo: Todo) {
         if (!todo.title.trim()) {
@@ -102,13 +105,9 @@
         }
       },
       async onBulkChange () {
-        const completed = this.allChecked;
-        await db.todos.query({
-          args: {
-            completed
-          },
-          body: (todos) => todos.toCollection().modify({ completed })
-        });
+        this.bulkState = this.bulkChecked ? 'full' : 'empty';
+        const completed = this.bulkChecked;
+        await db.todos.update({ completed });
         await this.getTodos();
       }
     },

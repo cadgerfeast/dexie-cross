@@ -170,7 +170,7 @@ export class DexieCrossClientTable<T = SafeAny> {
       }
     }
   }
-  public async query <K> (options: QueryArgs<T, K>): Promise<K> {
+  private async _query <K> (options: QueryArgs<T, K>): Promise<K> {
     await this._db.isReady();
     return new Promise<K>((resolve) => {
       const id = Date.now().toString();
@@ -183,6 +183,54 @@ export class DexieCrossClientTable<T = SafeAny> {
         args: options.args || {},
         query: encodeURI(options.body.toString())
       });
+    });
+  }
+  // To Array
+  public async toArray (): Promise<T[]> {
+    return this._query({
+      body: (table) => table.toArray()
+    });
+  }
+  // Add
+  public async add (el: T): Promise<number> {
+    return this._query({
+      args: {
+        el
+      },
+      body: (table) => table.add(el)
+    });
+  }
+  // Update
+  public async update (changes: SafeAny): Promise<number>;
+  public async update (el: T, changes: SafeAny): Promise<number>;
+  public async update (...args: SafeAny[]) {
+    if (args.length > 1) {
+      const el = args[0];
+      const changes = args[1];
+      return this._query({
+        args: {
+          el,
+          changes
+        },
+        body: (table) => table.update(el, changes)
+      });
+    } else {
+      const changes = args[0];
+      return this._query({
+        args: {
+          changes
+        },
+        body: (todos) => todos.toCollection().modify(changes)
+      });
+    }
+  }
+  // Delete
+  public async delete (key: number): Promise<void> {
+    return this._query({
+      args: {
+        key
+      },
+      body: (table) => table.delete(key)
     });
   }
 }

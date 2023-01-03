@@ -3,6 +3,12 @@ title: Dexie Cross - Usage - Client
 ---
 # Client
 
+Here is an implementation of the `Todo MVC` application, using our database hosted on other domain.
+
+<Anchor href="/usage/host">You can see the host view here.</Anchor>
+
+<Client/>
+
 In order to make request to a `Dexie` database on another domain, there's a little more you need to do:
 
 - Make sure the host domain accepts to be embedded as an `iframe`. You should have correct <Anchor href="https://content-security-policy.com/">Content Security Policy</Anchor> header set.
@@ -34,27 +40,14 @@ class TodoDatabase extends DexieCrossClient {
 }
 const db = new TodoDatabase();
 
-// Then, in order to make queries:
-const todos = await db.todos.query({
-  body: (todos) => todos.toArray()
+// Then, you can use a similar API than with a Dexie Database.
+const todos = await db.todos.toArray();
+await db.todos.add({
+  title: this.title,
+  completed: false
 });
-// If you need args to be passed to a query, you need to add them to the args section
-const todo = {
-  title: 'Use Dexie',
-  completed: true
-};
-await db.todos.query({
-  args: {
-    todo
-  },
-  body: (todos) => todos.add(todo)
+await db.todos.add({
+  title: this.title,
+  completed: false
 });
 ```
-
-## Playground
-
-Here is an implementation of the `Todo MVC` application, using our database hosted on other domain.
-
-<Anchor href="/usage/host">You can see the host view here.</Anchor>
-
-<Client/>

@@ -3,6 +3,12 @@ title: Dexie Cross - Usage - Host
 ---
 # Host
 
+Here is the current host data for the domain. You can modify directly on this table.
+
+<Anchor href="/usage/client">You can see the client view here.</Anchor>
+
+<Host/>
+
 In order to accept queries from other domains, a db should be using the `DexieCrossHost` addon.
 
 Here is how to use it:
@@ -30,11 +36,3 @@ class TodoDatabase extends Dexie {
 const db = new TodoDatabase();
 // Then you can use your database as you would normally
 ```
-
-## Database
-
-Here is the current host data for the domain. You can modify directly on this table.
-
-<Anchor href="/usage/client">You can see the client view here.</Anchor>
-
-<Host/>

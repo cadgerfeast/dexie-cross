@@ -1,8 +1,9 @@
 // Helpers
-import DexieCrossAddon from '../src/index.js';
+import { DexieCrossHost, DexieCrossClient } from '../src/index.js';
 
 describe('Index', () => {
-  it('should properly export dexie addon function', () => {
-    expect(DexieCrossAddon).toBeDefined();
+  it('should properly export dexie cross', () => {
+    expect(DexieCrossHost).toBeDefined();
+    expect(DexieCrossClient).toBeDefined();
   });
 });

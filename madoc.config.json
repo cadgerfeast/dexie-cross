@@ -1,5 +1,7 @@
 {
+  "title": "Dexie Cross",
   "description": "Dexie Cross Domain Addon",
+  "favicon": "/icons/dexie-cross.svg",
   "docsDir": "./docs",
   "addonsDir": "./addons",
   "publicDir": "./public",
