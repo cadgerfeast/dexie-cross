@@ -63,6 +63,7 @@
           title: 'My new Todo',
           completed: false
         });
+        await this.getTodos();
       },
       async onChangeTitle (todo: Todo) {
         const newTitle = todo.title.trim();
