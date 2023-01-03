@@ -34,7 +34,7 @@
     public todos!: DexieCrossClientTable<Todo>;
     constructor () {
       super('TodoDatabase', {
-        hostUrl: `${window.location.origin}/usage/host`
+        hostUrl: `${window.location.origin}/_db.html`
       });
       this.addTable<Todo>('todos');
     }

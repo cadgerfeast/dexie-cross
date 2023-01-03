@@ -6,9 +6,6 @@ type DexieEventData<T = SafeAny> = {
   type: 'dexie-cross';
   event: 'host-handshake';
 } | {
-  type: 'dexie-cross';
-  event: 'client-handshake';
-} | {
   id: string;
   type: 'dexie-cross';
   event: 'query';
@@ -33,25 +30,18 @@ function postDexieMessage (target: Window|null, message: DexieEventData) {
 export function DexieCrossHost (db: Dexie) {
   async function _handleMessage (target: MessageEventSource, e: DexieEventData) {
     switch (e.event) {
-      case 'client-handshake': {
-        target.postMessage(JSON.stringify({
-          type: 'dexie-cross',
-          event: 'host-handshake'
-        }));
-        break;
-      }
       case 'query': {
         const argKeys = Object.keys(e.args);
         const argValues = Object.values(e.args);
         const query = new Function('...args', `const [db, ${argKeys.join(', ')}] = args; return (${decodeURI(e.query)})(db['${e.table}']);`);
         const res = await query(db, ...argValues);
-        target.postMessage(JSON.stringify({
+        postDexieMessage(target as Window, {
           id: e.id,
           type: 'dexie-cross',
           event: 'response',
           table: e.table,
           data: res
-        }));
+        });
         break;
       }
     }
@@ -62,6 +52,12 @@ export function DexieCrossHost (db: Dexie) {
       _handleMessage(e.source as MessageEventSource, data);
     }
   });
+  if (window.parent) {
+    postDexieMessage(window.parent, {
+      type: 'dexie-cross',
+      event: 'host-handshake'
+    });
+  }
 }
 interface ClientManifest {
   hostUrl: string;
@@ -115,12 +111,6 @@ export class DexieCrossClient {
       if (data.type === 'dexie-cross') {
         this._handleMessage(data);
       }
-    });
-    iframe.addEventListener('load', () => {
-      postDexieMessage(iframe.contentWindow, {
-        type: 'dexie-cross',
-        event: 'client-handshake'
-      });
     });
     frameContainer.appendChild(iframe);
     document.body.appendChild(frameContainer);

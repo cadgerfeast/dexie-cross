@@ -33,30 +33,31 @@
 <script lang="ts">
   // Helpers
   import { defineComponent } from 'vue';
-  import { useObservable, from } from '@vueuse/rxjs';
-  import Dexie from 'dexie';
-  import { DexieCrossHost } from '../src';
+  import { DexieCrossClient, DexieCrossClientTable } from '../src';
   import { Todo } from './index';
   // Constants
-  class TodoDatabase extends Dexie {
-    public todos!: Dexie.Table<Todo, number>;
+  class TodoDatabase extends DexieCrossClient {
+    public todos!: DexieCrossClientTable<Todo>;
     constructor () {
-      super('TodoDatabase', { addons: [DexieCrossHost] });
-      this.version(1).stores({
-        todos: '++id, title, completed'
+      super('TodoDatabase', {
+        hostUrl: `${window.location.origin}/_db.html`
       });
+      this.addTable<Todo>('todos');
     }
   }
   const db = new TodoDatabase();
 
   export default defineComponent({
     name: 'Host',
-    setup () {
+    data () {
       return {
-        todos: useObservable(from(Dexie.liveQuery(() => db.todos.toArray())))
+        todos: [] as Todo[]
       };
     },
     methods: {
+      async getTodos () {
+        this.todos = await db.todos.toArray();
+      },
       async addTodo () {
         await db.todos.add({
           title: 'My new Todo',
@@ -72,12 +73,16 @@
         } else {
           await db.todos.delete(todo.id as number);
         }
+        await this.getTodos();
       },
       async onChangeCompleted (e: Event, todo: Todo) {
         await db.todos.update(todo, {
           completed: (e.target as HTMLInputElement).checked
         });
       }
+    },
+    mounted () {
+      this.getTodos();
     }
   });
 </script>
