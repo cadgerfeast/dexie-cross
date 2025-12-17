@@ -33,7 +33,7 @@ class TodoDatabase extends DexieCrossClient {
   constructor () {
     super('TodoDatabase', {
       // The host url should be defined here (best is to create a single html file that only instantiate your db)
-      hostUrl: 'https://dexie-cross.cadgerfeast.dev/usage/host'
+      hostUrl: 'https://dexie-cross.cadgerfeast.com/usage/host'
     });
     this.addTable<Todo>('todos');
   }
