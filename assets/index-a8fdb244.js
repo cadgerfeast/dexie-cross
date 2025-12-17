@@ -29,13 +29,11 @@ title: Dexie Cross
 ---
 # dexie-cross
 
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=cadgerfeast_dexie-cross&metric=alert_status)](https://sonarcloud.io/dashboard?id=cadgerfeast_dexie-cross)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=cadgerfeast_dexie-cross&metric=coverage)](https://sonarcloud.io/dashboard?id=cadgerfeast_dexie-cross)
 [![Version](https://badge.fury.io/js/%40dexie%2Fcross.svg)](https://www.npmjs.com/package/dexie-cross)
 [![Downloads](https://img.shields.io/npm/dt/dexie-cross.svg)](https://www.npmjs.com/package/dexie-cross)
 [![License](https://img.shields.io/npm/l/dexie-cross.svg)](https://github.com/cadgerfeast/dexie-cross/blob/master/LICENSE)
 
-<p align="center"><br/><img width="200" src="https://dexie-cross.cadgerfeast.dev/icons/dexie-cross.svg" alt="Dexie Cross Icon"/><br/><br/></p>
+<p align="center"><br/><img width="200" src="https://dexie-cross.cadgerfeast.com/icons/dexie-cross.svg" alt="Dexie Cross Icon"/><br/><br/></p>
 
 > Dexie Cross Domain Addon
 
@@ -84,7 +82,7 @@ class TodoDatabase extends DexieCrossClient {
   constructor () {
     super('TodoDatabase', {
       // The host url should be defined here (best is to create a single html file that only instantiate your db)
-      hostUrl: 'https://dexie-cross.cadgerfeast.dev/usage/host'
+      hostUrl: 'https://dexie-cross.cadgerfeast.com/usage/host'
     });
     this.addTable<Todo>('todos');
   }
